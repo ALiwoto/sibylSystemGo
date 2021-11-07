@@ -24,3 +24,18 @@ func TestBanUser01(t *testing.T) {
 	}
 	log.Println(b)
 }
+
+func TestUnBanUser01(t *testing.T) {
+	token := getToken()
+	if len(token) == 0 {
+		log.Println("token is empty; exiting")
+	}
+
+	client := sibylSystemGo.NewClient(token, sibylSystemGo.GetDefaultConfig())
+	b, err := client.RemoveBan(1478)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Println(b)
+}
