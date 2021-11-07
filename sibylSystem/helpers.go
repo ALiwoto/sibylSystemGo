@@ -5,7 +5,10 @@
 
 package sibylSystemGo
 
-import "strings"
+import (
+	"net/http"
+	"strings"
+)
 
 func NewClient(token string, config *SibylConfig) SibylClient {
 	if config == nil {
@@ -21,7 +24,10 @@ func NewClient(token string, config *SibylConfig) SibylClient {
 }
 
 func GetDefaultConfig() *SibylConfig {
-	return nil
+	return &SibylConfig{
+		HostUrl:    DefaultUrl,
+		HttpClient: &http.Client{},
+	}
 }
 
 func ToSibylError(err error) *SibylError {

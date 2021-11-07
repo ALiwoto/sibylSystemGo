@@ -21,6 +21,27 @@ type SibylConfig struct {
 }
 
 type SibylClient interface {
+	ChangeToken(token string) error
+	ChangeUrl(hostUrl string) error
+	ChangeToDefaultUrl()
+	GetHostUrl() string
+	Ban(userId int64, reason, message, srcUrl string,
+		isBot bool) (*BanResult, error)
+	BanUser(userId int64, reason, message, srcUrl string) (*BanResult, error)
+	BanBot(userId int64, reason, message, srcUrl string) (*BanResult, error)
+	RemoveBan(userId int64) (string, error)
+	GetInfo(userId int64) (*GetInfoResult, error)
+	GetGetAllBannedUsers() (*GetBansResult, error)
+	GetStats() (*GetStatsResult, error)
+	CheckToken() (bool, error)
+	Report(userId int64, reason, message, srcUrl string, isBot bool) (string, error)
+	ReportUser(userId int64, reason, message, srcUrl string) (string, error)
+	ReportBot(userId int64, reason, message, srcUrl string) (string, error)
+	CreateToken(userId int64) (*TokenInfo, error)
+	ChangePermission(userId int64, perm UserPermission) (*ChangePermResult, error)
+	RevokeToken(userId int64) (*TokenInfo, error)
+	GetToken(userId int64) (*TokenInfo, error)
+	GetAllRegisteredUsers() (*GetRegisteredResult, error)
 }
 
 type SibylError struct {
