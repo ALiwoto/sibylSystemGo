@@ -26,7 +26,7 @@ func NewClient(token string, config *SibylConfig) SibylClient {
 func GetDefaultConfig() *SibylConfig {
 	return &SibylConfig{
 		HostUrl:    DefaultUrl,
-		HttpClient: &http.Client{},
+		HttpClient: http.DefaultClient,
 	}
 }
 
@@ -38,15 +38,28 @@ func ToSibylError(err error) *SibylError {
 	if sibylError, ok := err.(*SibylError); ok {
 		return sibylError
 	}
+
 	return nil
 }
 
 func validateHostUrl(value string) string {
+	if len(value) < 3 {
+		return DefaultUrl
+	}
+
+	if value[len(value)-1] != '/' {
+		value += "/"
+	}
+
 	if strings.HasPrefix(value, "http://") || strings.HasPrefix(value, "https://") {
 		return value
 	}
+
+	// animekaizoku's domains are mostly protected by cloudflare shit,
+	// so we need to use https:// for them.
 	if strings.Contains(value, "animekaizoku") {
 		return "https://" + value
 	}
-	return value
+
+	return "http://" + value
 }
