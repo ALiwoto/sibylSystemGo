@@ -331,7 +331,7 @@ func (s *sibylCore) RevokeToken(userId int64) (*TokenInfo, error) {
 }
 
 func (s *sibylCore) GetToken(userId int64) (*TokenInfo, error) {
-	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"revokeToken", nil)
+	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"getToken", nil)
 	if err != nil {
 		return nil, err
 	}
