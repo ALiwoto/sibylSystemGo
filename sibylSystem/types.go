@@ -172,7 +172,7 @@ type CreateTokenResponse struct {
 }
 
 type TokenInfo struct {
-	UserId          int64          `json:"user_id"`
+	UserId          int64          `json:"user_id" gorm:"primaryKey"`
 	Hash            string         `json:"hash"`
 	Permission      UserPermission `json:"permission"`
 	CreatedAt       string         `json:"created_at"`
