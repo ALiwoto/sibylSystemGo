@@ -5,7 +5,10 @@
 
 package sibylSystemGo
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
 
 type UserPermission int
 
@@ -175,6 +178,7 @@ type TokenInfo struct {
 	CreatedAt       string         `json:"created_at"`
 	AcceptedReports int            `json:"accepted_reports"`
 	DeniedReports   int            `json:"denied_reports"`
+	cachedTime      time.Time      `json:"-"`
 }
 
 // change permission types:

@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // error methods:
@@ -371,3 +372,15 @@ func (s *sibylCore) GetAllRegisteredUsers() (*GetRegisteredResult, error) {
 	}
 	return resp.Result, nil
 }
+
+//---------------------------------------------------------
+
+func (t *TokenInfo) SetCachedTime(tCache time.Time) {
+	t.cachedTime = tCache
+}
+
+func (t *TokenInfo) IsExpired(d time.Duration) bool {
+	return time.Since(t.cachedTime) > d
+}
+
+//---------------------------------------------------------
