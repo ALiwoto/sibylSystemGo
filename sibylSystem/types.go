@@ -6,6 +6,7 @@
 package sibylSystemGo
 
 import (
+	"context"
 	"net/http"
 	"time"
 )
@@ -15,12 +16,14 @@ type UserPermission int
 type sibylCore struct {
 	Token      string
 	HostUrl    string
+	Context    context.Context
 	HttpClient *http.Client
 }
 
 type SibylConfig struct {
 	HostUrl    string
 	HttpClient *http.Client
+	Context    context.Context
 }
 
 type SibylClient interface {
@@ -34,6 +37,7 @@ type SibylClient interface {
 	BanBot(userId int64, reason, message, srcUrl string) (*BanResult, error)
 	RemoveBan(userId int64) (string, error)
 	GetInfo(userId int64) (*GetInfoResult, error)
+	GetGeneralInfo(userId int64) (*GeneralInfoResult, error)
 	GetGetAllBannedUsers() (*GetBansResult, error)
 	GetStats() (*GetStatsResult, error)
 	CheckToken() (bool, error)
@@ -45,6 +49,9 @@ type SibylClient interface {
 	RevokeToken(userId int64) (*TokenInfo, error)
 	GetToken(userId int64) (*TokenInfo, error)
 	GetAllRegisteredUsers() (*GetRegisteredResult, error)
+	String() string
+	Println()
+	Print()
 }
 
 type SibylError struct {
@@ -107,6 +114,23 @@ type GetInfoResult struct {
 	Date             string   `json:"date"`
 	BanFlags         []string `json:"ban_flags"`
 	IsBot            bool     `json:"is_bot"`
+}
+
+// general info types
+
+type GeneralInfoResponse struct {
+	Success bool               `json:"success"`
+	Result  *GeneralInfoResult `json:"result"`
+	Error   *SibylError        `json:"error"`
+}
+
+type GeneralInfoResult struct {
+	UserId         int64          `json:"user_id"`
+	Division       int            `json:"division"`
+	AssignedBy     int64          `json:"assigned_by"`
+	AssignedReason string         `json:"assigned_reason"`
+	AssignedAt     string         `json:"assigned_at"`
+	Permission     UserPermission `json:"permission"`
 }
 
 // get bans types:
@@ -178,6 +202,9 @@ type TokenInfo struct {
 	CreatedAt       string         `json:"created_at"`
 	AcceptedReports int            `json:"accepted_reports"`
 	DeniedReports   int            `json:"denied_reports"`
+	AssignedBy      int64          `json:"assigned_by"`
+	DivisionNum     int            `json:"division_num"`
+	AssignedReason  string         `json:"assigned_reason"`
 	cachedTime      time.Time      `json:"-"`
 }
 

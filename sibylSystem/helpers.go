@@ -6,6 +6,7 @@
 package sibylSystemGo
 
 import (
+	"context"
 	"net/http"
 	"strings"
 )
@@ -20,6 +21,15 @@ func NewClient(token string, config *SibylConfig) SibylClient {
 		HostUrl:    validateHostUrl(config.HostUrl),
 		HttpClient: config.HttpClient,
 	}
+
+	if core.Context == nil {
+		core.Context = context.Background()
+	}
+
+	if core.HostUrl[len(core.HostUrl)-1] != '/' {
+		core.HostUrl += "/"
+	}
+
 	return core
 }
 
@@ -27,6 +37,7 @@ func GetDefaultConfig() *SibylConfig {
 	return &SibylConfig{
 		HostUrl:    DefaultUrl,
 		HttpClient: http.DefaultClient,
+		Context:    context.Background(),
 	}
 }
 

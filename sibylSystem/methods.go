@@ -6,9 +6,12 @@
 package sibylSystemGo
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	urlLib "net/url"
 	"strconv"
 	"time"
 )
@@ -19,6 +22,8 @@ func (e *SibylError) Error() string {
 	return http.StatusText(e.Code) + " [" + strconv.Itoa(e.Code) + "]: " + e.Message
 }
 
+//---------------------------------------------------------
+
 // general and private methods:
 
 func (s *sibylCore) revokeRequest(req *http.Request, result interface{}) error {
@@ -27,11 +32,13 @@ func (s *sibylCore) revokeRequest(req *http.Request, result interface{}) error {
 		return err
 	}
 
+	return s.readResp(resp, result)
+}
+
+func (s *sibylCore) readResp(resp *http.Response, result interface{}) error {
 	defer resp.Body.Close()
 
-	var b []byte
-
-	b, err = ioutil.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -40,7 +47,40 @@ func (s *sibylCore) revokeRequest(req *http.Request, result interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
+}
+
+func (s *sibylCore) getRequest(url string, params urlLib.Values, result interface{}) error {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+
+	req.URL.RawQuery = params.Encode()
+
+	resp, err := s.HttpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	return s.readResp(resp, result)
+}
+
+func (s *sibylCore) String() string {
+	return "SibylClient (as sibylCore): " + s.HostUrl
+}
+
+func (s *sibylCore) Stringln() string {
+	return "SibylClient (as sibylCore): " + s.HostUrl + "\n"
+}
+
+func (s *sibylCore) Println() {
+	fmt.Println(s.String())
+}
+
+func (s *sibylCore) Print() {
+	fmt.Print(s.String())
 }
 
 // general and public methods:
@@ -81,21 +121,18 @@ func (s *sibylCore) Ban(userId int64, reason, message, srcUrl string,
 		return nil, ErrNoReason
 	}
 
-	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"addBan", nil)
-	if err != nil {
-		return nil, err
-	}
+	v := urlLib.Values{}
 
-	req.Header.Add("token", s.Token)
-	req.Header.Add("user-id", strconv.FormatInt(userId, 10))
-	req.Header.Add("reason", reason)
-	req.Header.Add("message", message)
-	req.Header.Add("srcUrl", srcUrl)
-	req.Header.Add("is-bot", strconv.FormatBool(isBot))
+	v.Add("token", s.Token)
+	v.Add("user-id", strconv.FormatInt(userId, 10))
+	v.Add("reason", reason)
+	v.Add("message", message)
+	v.Add("srcUrl", srcUrl)
+	v.Add("is-bot", strconv.FormatBool(isBot))
 
 	resp := new(AddBanResponse)
 
-	err = s.revokeRequest(req, resp)
+	err := s.getRequest(s.HostUrl+"addBan", v, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +140,7 @@ func (s *sibylCore) Ban(userId int64, reason, message, srcUrl string,
 	if !resp.Success && resp.Error != nil {
 		return nil, resp.Error
 	}
+
 	return resp.Result, nil
 }
 
@@ -133,6 +171,7 @@ func (s *sibylCore) RemoveBan(userId int64) (string, error) {
 	if !resp.Success && resp.Error != nil {
 		return "", resp.Error
 	}
+
 	return resp.Result, nil
 }
 
@@ -148,6 +187,28 @@ func (s *sibylCore) GetInfo(userId int64) (*GetInfoResult, error) {
 	req.Header.Add("user-id", strconv.FormatInt(userId, 10))
 
 	resp := new(GetInfoResponse)
+
+	err = s.revokeRequest(req, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	if !resp.Success && resp.Error != nil {
+		return nil, resp.Error
+	}
+	return resp.Result, nil
+}
+
+func (s *sibylCore) GetGeneralInfo(userId int64) (*GeneralInfoResult, error) {
+	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"getGeneralInfo", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("token", s.Token)
+	req.Header.Add("user-id", strconv.FormatInt(userId, 10))
+
+	resp := new(GeneralInfoResponse)
 
 	err = s.revokeRequest(req, resp)
 	if err != nil {
@@ -229,21 +290,18 @@ func (s *sibylCore) Report(userId int64, reason, message, srcUrl string, isBot b
 		return "", ErrNoReason
 	}
 
-	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"reportUser", nil)
-	if err != nil {
-		return "", err
-	}
+	v := urlLib.Values{}
 
-	req.Header.Add("token", s.Token)
-	req.Header.Add("user-id", strconv.FormatInt(userId, 10))
-	req.Header.Add("reason", reason)
-	req.Header.Add("message", message)
-	req.Header.Add("src", srcUrl)
-	req.Header.Add("is-bot", strconv.FormatBool(isBot))
+	v.Add("token", s.Token)
+	v.Add("user-id", strconv.FormatInt(userId, 10))
+	v.Add("reason", reason)
+	v.Add("message", message)
+	v.Add("src", srcUrl)
+	v.Add("is-bot", strconv.FormatBool(isBot))
 
 	resp := new(ReportResponse)
 
-	err = s.revokeRequest(req, resp)
+	err := s.getRequest(s.HostUrl+"reportUser", v, resp)
 	if err != nil {
 		return "", err
 	}
@@ -251,6 +309,7 @@ func (s *sibylCore) Report(userId int64, reason, message, srcUrl string, isBot b
 	if !resp.Success && resp.Error != nil {
 		return "", resp.Error
 	}
+
 	return resp.Result, nil
 }
 
@@ -381,6 +440,30 @@ func (t *TokenInfo) SetCachedTime(tCache time.Time) {
 
 func (t *TokenInfo) IsExpired(d time.Duration) bool {
 	return time.Since(t.cachedTime) > d
+}
+
+func (t *TokenInfo) IsValid() bool {
+	return len(t.Hash) > 20 && t.UserId != 0
+}
+
+func (t *TokenInfo) IsCitizen() bool {
+	return t.Permission == NormalUser
+}
+
+func (t *TokenInfo) IsRegistered() bool {
+	return t.Permission > NormalUser
+}
+
+func (t *TokenInfo) IsEnforcer() bool {
+	return t.Permission == Enforcer
+}
+
+func (t *TokenInfo) IsInspector() bool {
+	return t.Permission == Inspector
+}
+
+func (t *TokenInfo) IsOwner() bool {
+	return t.Permission == Owner
 }
 
 //---------------------------------------------------------
