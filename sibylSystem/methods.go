@@ -115,20 +115,30 @@ func (s *sibylCore) GetHostUrl() string {
 
 // ban-related methods:
 
-func (s *sibylCore) Ban(userId int64, reason, message, srcUrl string,
-	isBot bool) (*BanResult, error) {
+func (s *sibylCore) Ban(userId int64, reason string, config *BanConfig) (*BanResult, error) {
 	if len(reason) < 1 {
 		return nil, ErrNoReason
 	}
 
+	if config == nil {
+		config = &BanConfig{}
+	}
+
+	var myToken string
+	if config.TheToken != "" {
+		myToken = config.TheToken
+	} else {
+		myToken = s.Token
+	}
+
 	v := urlLib.Values{}
 
-	v.Add("token", s.Token)
+	v.Add("token", myToken)
 	v.Add("user-id", strconv.FormatInt(userId, 10))
 	v.Add("reason", reason)
-	v.Add("message", message)
-	v.Add("srcUrl", srcUrl)
-	v.Add("is-bot", strconv.FormatBool(isBot))
+	v.Add("message", config.Message)
+	v.Add("srcUrl", config.SrcUrl)
+	v.Add("is-bot", strconv.FormatBool(config.IsBot))
 
 	resp := new(AddBanResponse)
 
@@ -144,12 +154,22 @@ func (s *sibylCore) Ban(userId int64, reason, message, srcUrl string,
 	return resp.Result, nil
 }
 
-func (s *sibylCore) BanUser(userId int64, reason, message, srcUrl string) (*BanResult, error) {
-	return s.Ban(userId, reason, message, srcUrl, false)
+func (s *sibylCore) BanUser(userId int64, reason string, config *BanConfig) (*BanResult, error) {
+	if config == nil {
+		config = &BanConfig{}
+	}
+
+	config.IsBot = false
+	return s.Ban(userId, reason, config)
 }
 
-func (s *sibylCore) BanBot(userId int64, reason, message, srcUrl string) (*BanResult, error) {
-	return s.Ban(userId, reason, message, srcUrl, true)
+func (s *sibylCore) BanBot(userId int64, reason string, config *BanConfig) (*BanResult, error) {
+	if config == nil {
+		config = &BanConfig{}
+	}
+
+	config.IsBot = true
+	return s.Ban(userId, reason, config)
 }
 
 func (s *sibylCore) RemoveBan(userId int64) (string, error) {
@@ -285,19 +305,30 @@ func (s *sibylCore) CheckToken() (bool, error) {
 }
 
 // report methods:
-func (s *sibylCore) Report(userId int64, reason, message, srcUrl string, isBot bool) (string, error) {
+func (s *sibylCore) Report(userId int64, reason string, config *ReportConfig) (string, error) {
 	if len(reason) < 1 {
 		return "", ErrNoReason
 	}
 
+	if config == nil {
+		config = &ReportConfig{}
+	}
+
+	var myToken string
+	if config.TheToken != "" {
+		myToken = config.TheToken
+	} else {
+		myToken = s.Token
+	}
+
 	v := urlLib.Values{}
 
-	v.Add("token", s.Token)
+	v.Add("token", myToken)
 	v.Add("user-id", strconv.FormatInt(userId, 10))
 	v.Add("reason", reason)
-	v.Add("message", message)
-	v.Add("src", srcUrl)
-	v.Add("is-bot", strconv.FormatBool(isBot))
+	v.Add("message", config.Message)
+	v.Add("src", config.SrcUrl)
+	v.Add("is-bot", strconv.FormatBool(config.IsBot))
 
 	resp := new(ReportResponse)
 
@@ -313,12 +344,22 @@ func (s *sibylCore) Report(userId int64, reason, message, srcUrl string, isBot b
 	return resp.Result, nil
 }
 
-func (s *sibylCore) ReportUser(userId int64, reason, message, srcUrl string) (string, error) {
-	return s.Report(userId, reason, message, srcUrl, false)
+func (s *sibylCore) ReportUser(userId int64, reason string, config *ReportConfig) (string, error) {
+	if config == nil {
+		config = &ReportConfig{}
+	}
+
+	config.IsBot = false
+	return s.Report(userId, reason, config)
 }
 
-func (s *sibylCore) ReportBot(userId int64, reason, message, srcUrl string) (string, error) {
-	return s.Report(userId, reason, message, srcUrl, true)
+func (s *sibylCore) ReportBot(userId int64, reason string, config *ReportConfig) (string, error) {
+	if config == nil {
+		config = &ReportConfig{}
+	}
+
+	config.IsBot = true
+	return s.Report(userId, reason, config)
 }
 
 // token methods:
@@ -464,6 +505,128 @@ func (t *TokenInfo) IsInspector() bool {
 
 func (t *TokenInfo) IsOwner() bool {
 	return t.Permission == Owner
+}
+
+//---------------------------------------------------------
+
+// IsOwner returns true if the token's permission
+// is owner.
+func (p UserPermission) IsOwner() bool {
+	return p == Owner
+}
+
+// IsInspector returns true if the token's permission
+// is inspector.
+func (p UserPermission) IsInspector() bool {
+	return p == Inspector
+}
+
+// IsEnforcer returns true if the token's permission
+// is enforcer.
+func (p UserPermission) IsEnforcer() bool {
+	return p == Enforcer
+}
+
+// IsRegistered returns true if the owner of this token is considered as
+// a valid registered user in the system.
+func (p UserPermission) IsRegistered() bool {
+	return p > NormalUser
+}
+
+// CanReport returns true if the token with its current
+// permission can report a user to sibyl system or not.
+func (p UserPermission) CanReport() bool {
+	return p > NormalUser
+}
+
+// CanBeReported returns true if the token with its current
+// permission can be reported to sibyl system or not.
+func (p UserPermission) CanBeReported() bool {
+	return p == NormalUser
+}
+
+// CanBeBanned returns true if the token with its current
+// permission can be banned on sibyl system or not.
+func (p UserPermission) CanBeBanned() bool {
+	return p == NormalUser
+}
+
+// HasRole returns true if and only if this token belongs to a
+// user which has a role in the Sibyl System (is not a normal user).
+func (p UserPermission) HasRole() bool {
+	return p > NormalUser
+}
+
+// CanBan returns true if the token with its current
+// permission can ban/unban a user from Sibyl System or not.
+func (p UserPermission) CanBan() bool {
+	return p > Enforcer
+}
+
+// CanCreateToken returns true if the token with its current
+// permission can create tokens in Sibyl System or not.
+func (p UserPermission) CanCreateToken() bool {
+	return p > Inspector
+}
+
+// CanRevokeToken returns true if the token with its current
+// permission can revoke tokens in Sibyl System or not.
+func (p UserPermission) CanRevokeToken() bool {
+	return p > Inspector
+}
+
+// CanSeeStats returns true if the token with its current
+// permission can see stats of another tokens or not.
+func (p UserPermission) CanSeeStats() bool {
+	return p > Enforcer
+}
+
+// CanGetToken returns true if the token with its current
+// permission can get the token of another user using their id
+// or not.
+func (p UserPermission) CanGetToken() bool {
+	return p == Owner
+}
+
+// CanGetGeneralInfo returns true if the token with its current
+// permission can get general info of a registered user using their id
+// or not.
+func (p UserPermission) CanGetGeneralInfo() bool {
+	return p > NormalUser
+}
+
+// CanGetAllBans returns true if the token with its current
+// permission can get all the banned users.
+func (p UserPermission) CanGetAllBans() bool {
+	return p > NormalUser
+}
+
+// CanGetRegisteredList returns true if the token with its current
+// permission can get all the registered users.
+func (p UserPermission) CanGetRegisteredList() bool {
+	return p > NormalUser
+}
+
+// CanChangePermission returns true if the token with its current
+// permission can change permission of another tokens or not.
+func (p UserPermission) CanChangePermission(pre, target UserPermission) bool {
+	return !(p < Inspector || pre >= p || target >= p)
+}
+
+// CanTryChangePermission returns true if the token with its current
+// permission can try to change permission of another tokens or not.
+func (p UserPermission) CanTryChangePermission(direct bool) bool {
+	if direct {
+		return p > Inspector
+	}
+
+	return p > Enforcer
+}
+
+// CanGetStats returns true if the token with its current
+// permission can get all stats of sibyl system or not.
+func (p UserPermission) CanGetStats() bool {
+	return p > Enforcer
 }
 
 //---------------------------------------------------------

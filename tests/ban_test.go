@@ -19,7 +19,10 @@ func TestBanUser01(t *testing.T) {
 	const reason01 = "Spam adding +99 members to an anime group"
 	const msg = "https://t.me/MusicSingAlong/832471"
 	const src = "https://t.me/AnimeKaizoku/6176165"
-	b, err := client.BanUser(1478, reason01, msg, src)
+	b, err := client.BanUser(1478, reason01, &sibylSystemGo.BanConfig{
+		Message: msg,
+		SrcUrl:  src,
+	})
 	if err != nil {
 		log.Println(err)
 		return
@@ -45,7 +48,10 @@ func TestBanUser02(t *testing.T) {
 	const reason01 = "Spam adding +99 members to an anime group"
 	const msg = "https://t.me/MusicSingAlong/832471"
 	const src = "https://t.me/AnimeKaizoku/6176165"
-	b, err := client.BanUser(1478, reason01, msg, src)
+	b, err := client.BanUser(1478, reason01, &sibylSystemGo.BanConfig{
+		Message: msg,
+		SrcUrl:  src,
+	})
 	if err != nil {
 		log.Println(err)
 		return

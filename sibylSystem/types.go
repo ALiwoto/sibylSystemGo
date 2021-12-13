@@ -27,30 +27,84 @@ type SibylConfig struct {
 }
 
 type SibylClient interface {
+	// ChangeToken changes token of the current SibylClient.
+	// returns error if any.
 	ChangeToken(token string) error
+
+	// ChangeUrl changes host url of the current SibylClient.
 	ChangeUrl(hostUrl string) error
+
+	// ChangeToDefaultUrl changes host url of the current SibylClient to default url.
 	ChangeToDefaultUrl()
+
+	// GetHostUrl returns host url of the current SibylClient.
 	GetHostUrl() string
-	Ban(userId int64, reason, message, srcUrl string,
-		isBot bool) (*BanResult, error)
-	BanUser(userId int64, reason, message, srcUrl string) (*BanResult, error)
-	BanBot(userId int64, reason, message, srcUrl string) (*BanResult, error)
+
+	// Ban bans user with given id, reason and BanConfig.
+	Ban(userId int64, reason string, config *BanConfig) (*BanResult, error)
+
+	// BanUser bans a "user" with given id, reason and BanConfig.
+	// IsBot parameter will be set to false.
+	BanUser(userId int64, reason string, config *BanConfig) (*BanResult, error)
+
+	// BanBot bans a "user" with given id, reason and BanConfig.
+	// IsBot parameter will be set to true.
+	BanBot(userId int64, reason string, config *BanConfig) (*BanResult, error)
+
+	// RemoveBan removes ban from user with given id.
 	RemoveBan(userId int64) (string, error)
+
+	// GetInfo returns information about the user with given id.
 	GetInfo(userId int64) (*GetInfoResult, error)
+
+	// GetGeneralInfo returns information about the user with given id.
+	// if the user is not a registered user at PSB, server will return error.
 	GetGeneralInfo(userId int64) (*GeneralInfoResult, error)
+
+	// GetGetAllBannedUsers returns information about all banned users.
 	GetGetAllBannedUsers() (*GetBansResult, error)
+
+	// GetStats returns current server stats.
 	GetStats() (*GetStatsResult, error)
+
+	// CheckToken checks if the token is valid.
 	CheckToken() (bool, error)
-	Report(userId int64, reason, message, srcUrl string, isBot bool) (string, error)
-	ReportUser(userId int64, reason, message, srcUrl string) (string, error)
-	ReportBot(userId int64, reason, message, srcUrl string) (string, error)
+
+	// Report reports a user with given id, reason and ReportConfig.
+	Report(userId int64, reason string, config *ReportConfig) (string, error)
+
+	// ReportUser reports a "user" with given id, reason and ReportConfig.
+	// IsBot parameter will be set to false.
+	ReportUser(userId int64, reason string, config *ReportConfig) (string, error)
+
+	// ReportBot reports a "bot" with given id, reason and ReportConfig.
+	// IsBot parameter will be set to true.
+	ReportBot(userId int64, reason string, config *ReportConfig) (string, error)
+
+	// CreateToken creates a new token in the server-side.
 	CreateToken(userId int64) (*TokenInfo, error)
+
+	// ChangePermission changes permission of the user with given id.
 	ChangePermission(userId int64, perm UserPermission) (*ChangePermResult, error)
+
+	// RevokeToken revokes the token of the user with given id.
+	// It needs owner permission if the user-id doesn't belong to yourself.
 	RevokeToken(userId int64) (*TokenInfo, error)
+
+	// GetToken returns the token of the user with given id.
+	// it needs owner permission if the user-id doesn't belong to yourself.
 	GetToken(userId int64) (*TokenInfo, error)
+
+	// GetAllRegisteredUsers returns information about all registered users.
 	GetAllRegisteredUsers() (*GetRegisteredResult, error)
+
+	// String returns string representation of the current SibylClient.
 	String() string
+
+	// Println prints string representation of the current SibylClient using fmt.Println.
 	Println()
+
+	// Print prints string representation of the current SibylClient using fmt.Print.
 	Print()
 }
 
@@ -59,6 +113,20 @@ type SibylError struct {
 	Message string `json:"message"`
 	Origin  string `json:"origin"`
 	Date    string `json:"date"`
+}
+
+type BanConfig struct {
+	Message  string
+	SrcUrl   string
+	IsBot    bool
+	TheToken string
+}
+
+type ReportConfig struct {
+	Message  string
+	SrcUrl   string
+	IsBot    bool
+	TheToken string
 }
 
 // Add ban types:
