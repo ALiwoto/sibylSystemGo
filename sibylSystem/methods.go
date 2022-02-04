@@ -1,9 +1,9 @@
 // sibylSystemGo library Project
-// Copyright (C) 2021 ALiwoto
+// Copyright (C) 2021-2022 ALiwoto
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of the source code.
 
-package sibylSystemGo
+package sibylSystem
 
 import (
 	"context"
@@ -13,7 +13,11 @@ import (
 	"net/http"
 	urlLib "net/url"
 	"strconv"
+	"strings"
 	"time"
+
+	ws "github.com/ALiwoto/StrongStringGo/strongStringGo"
+	"github.com/ALiwoto/mdparser/mdparser"
 )
 
 // error methods:
@@ -138,7 +142,7 @@ func (s *sibylCore) Ban(userId int64, reason string, config *BanConfig) (*BanRes
 	v.Add("reason", reason)
 	v.Add("message", config.Message)
 	v.Add("srcUrl", config.SrcUrl)
-	v.Add("is-bot", strconv.FormatBool(config.IsBot))
+	v.Add("entity-type", config.TargetType.ToString())
 
 	resp := new(AddBanResponse)
 
@@ -159,7 +163,7 @@ func (s *sibylCore) BanUser(userId int64, reason string, config *BanConfig) (*Ba
 		config = &BanConfig{}
 	}
 
-	config.IsBot = false
+	config.TargetType = EntityTypeUser
 	return s.Ban(userId, reason, config)
 }
 
@@ -168,7 +172,7 @@ func (s *sibylCore) BanBot(userId int64, reason string, config *BanConfig) (*Ban
 		config = &BanConfig{}
 	}
 
-	config.IsBot = true
+	config.TargetType = EntityTypeBot
 	return s.Ban(userId, reason, config)
 }
 
@@ -328,7 +332,7 @@ func (s *sibylCore) Report(userId int64, reason string, config *ReportConfig) (s
 	v.Add("reason", reason)
 	v.Add("message", config.Message)
 	v.Add("src", config.SrcUrl)
-	v.Add("is-bot", strconv.FormatBool(config.IsBot))
+	v.Add("entity-type", config.TargetType.ToString())
 
 	resp := new(ReportResponse)
 
@@ -344,13 +348,21 @@ func (s *sibylCore) Report(userId int64, reason string, config *ReportConfig) (s
 	return resp.Result, nil
 }
 
+func (s *sibylCore) Scan(userId int64, reason string, config *ReportConfig) (string, error) {
+	return s.Report(userId, reason, config)
+}
+
 func (s *sibylCore) ReportUser(userId int64, reason string, config *ReportConfig) (string, error) {
 	if config == nil {
 		config = &ReportConfig{}
 	}
 
-	config.IsBot = false
+	config.TargetType = EntityTypeUser
 	return s.Report(userId, reason, config)
+}
+
+func (s *sibylCore) ScanUser(userId int64, reason string, config *ReportConfig) (string, error) {
+	return s.ReportUser(userId, reason, config)
 }
 
 func (s *sibylCore) ReportBot(userId int64, reason string, config *ReportConfig) (string, error) {
@@ -358,7 +370,7 @@ func (s *sibylCore) ReportBot(userId int64, reason string, config *ReportConfig)
 		config = &ReportConfig{}
 	}
 
-	config.IsBot = true
+	config.TargetType = EntityTypeBot
 	return s.Report(userId, reason, config)
 }
 
@@ -630,3 +642,147 @@ func (p UserPermission) CanGetStats() bool {
 }
 
 //---------------------------------------------------------
+
+func (r *GetInfoResult) IsPerma() bool {
+	return strings.Contains(r.Reason, "perma")
+}
+
+func (r *GetInfoResult) HasCustomFlag() bool {
+	return len(r.BanFlags) != 0 && r.BanFlags[0x0] == BanFlagCustom
+}
+
+func (r *GetInfoResult) SetAsBanReason(reason string) {
+	r.Reason = reason
+}
+
+func (r *GetInfoResult) GetDateAsShort() string {
+	return r.Date
+}
+
+func (r *GetInfoResult) EstimateCrimeCoefficient() string {
+	c := r.CrimeCoefficient
+	if c > 100 {
+		str := strconv.Itoa(c)
+		return "over " + str[:len(str)-2] + "00"
+	}
+	return "under 100"
+}
+
+func (r *GetInfoResult) GetStringCrimeCoefficient() string {
+	return strconv.Itoa(r.CrimeCoefficient)
+}
+
+func (r *GetInfoResult) FormatFlags() mdparser.WMarkDown {
+	md := mdparser.GetEmpty()
+	if len(r.BanFlags) == 0 {
+		return md
+	}
+
+	for i, current := range r.BanFlags {
+		if i != 0 {
+			md.Normal(", ")
+		}
+		md.Mono(string(current))
+	}
+
+	return md
+}
+
+func (r *GetInfoResult) FormatCuteFlags() mdparser.WMarkDown {
+	md := mdparser.GetEmpty()
+	if len(r.BanFlags) == 0 {
+		return md
+	} else if len(r.BanFlags) == 1 {
+		return md.Normal(strings.ToLower(string(r.BanFlags[0x0])))
+	}
+
+	for i, current := range r.BanFlags {
+		if i != 0 && i != len(r.BanFlags)-1 {
+			md.Normal(", ")
+		} else if i == len(r.BanFlags)-1 {
+			md.Normal(" and ")
+		}
+		md.Normal(strings.ToLower(string(current)))
+	}
+
+	return md
+}
+
+func (r *GetInfoResult) EstimateCrimeCoefficientSep() (string, string) {
+	c := r.CrimeCoefficient
+	if c > 100 {
+		str := strconv.Itoa(c)
+		return "over ", str[:len(str)-2] + "00"
+	}
+	return "under ", "100"
+}
+
+//---------------------------------------------------------
+
+func (e EntityType) ToString() string {
+	return ws.ToBase10(int64(e))
+}
+
+func (e EntityType) IsBot() bool {
+	return e == EntityTypeBot
+}
+
+func (e EntityType) IsBotStr() string {
+	return ws.YesOrNo(e == EntityTypeBot)
+}
+
+func (e EntityType) IsUser() bool {
+	return e == EntityTypeUser
+}
+
+func (e EntityType) IsUserStr() string {
+	return ws.YesOrNo(e == EntityTypeUser)
+}
+
+func (e EntityType) IsAdmin() bool {
+	return e == EntityTypeAdmin
+}
+
+func (e EntityType) IsAdminStr() string {
+	return ws.YesOrNo(e == EntityTypeAdmin)
+}
+
+func (e EntityType) IsOwner() bool {
+	return e == EntityTypeOwner
+}
+
+func (e EntityType) IsOwnerStr() string {
+	return ws.YesOrNo(e == EntityTypeOwner)
+}
+
+func (e EntityType) IsGroup() bool {
+	return e == EntityTypeGroup
+}
+
+func (e EntityType) IsGroupStr() string {
+	return ws.YesOrNo(e == EntityTypeGroup)
+}
+
+func (e EntityType) IsChannel() bool {
+	return e == EntityTypeChannel
+}
+
+func (e EntityType) IsChannelStr() string {
+	return ws.YesOrNo(e == EntityTypeChannel)
+}
+
+func (e EntityType) IsChat() bool {
+	return e == EntityTypeChannel || e == EntityTypeGroup
+}
+
+func (e EntityType) IsChatStr() string {
+	return ws.YesOrNo(e == EntityTypeChannel || e == EntityTypeGroup)
+}
+
+func (e EntityType) IsOwnerOrAdmin() bool {
+	return e == EntityTypeOwner || e == EntityTypeAdmin
+}
+
+func (e EntityType) IsOwnerOrAdminStr() string {
+	return ws.YesOrNo(e == EntityTypeOwner || e == EntityTypeAdmin)
+}

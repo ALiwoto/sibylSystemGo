@@ -17,7 +17,7 @@ func TestBanUser01(t *testing.T) {
 
 	client := sibylSystemGo.NewClient(token, sibylSystemGo.GetDefaultConfig())
 	const reason01 = "Spam adding +99 members to an anime group"
-	const msg = "https://t.me/MusicSingAlong/832471"
+	const msg = "https://t.me/telegram/832471"
 	const src = "https://t.me/AnimeKaizoku/6176165"
 	b, err := client.BanUser(1478, reason01, &sibylSystemGo.BanConfig{
 		Message: msg,
@@ -46,7 +46,7 @@ func TestBanUser02(t *testing.T) {
 	fmt.Print(client)
 
 	const reason01 = "Spam adding +99 members to an anime group"
-	const msg = "https://t.me/MusicSingAlong/832471"
+	const msg = "https://t.me/telegram/832471"
 	const src = "https://t.me/AnimeKaizoku/6176165"
 	b, err := client.BanUser(1478, reason01, &sibylSystemGo.BanConfig{
 		Message: msg,

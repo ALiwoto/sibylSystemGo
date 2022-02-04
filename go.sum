@@ -1,0 +1,7 @@
+github.com/ALiwoto/StrongStringGo v1.0.10 h1:Zy8pvVWrdtueXFxC4HjU0lyVZbz/F1UtD8IVVL48Pgs=
+github.com/ALiwoto/StrongStringGo v1.0.10/go.mod h1:t7WxtiphnwdgJaq443DSCAw7q+Ut3V8Pg1kT6IcdKmE=
+github.com/ALiwoto/mdparser v1.0.10 h1:fV1YePSwHNCqEboFDvaTrHqTiUazTWVKBER03HUAAIc=
+github.com/ALiwoto/mdparser v1.0.10/go.mod h1:oKSQ8y6XxAX5Z1CWX7M9pRPNyGINi0fGGvu4GIJTebw=
+github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.5/go.mod h1:r815fYWTudnU9JhtsJAxUtuV7QrSgKpChJkfTSMFpfg=
+github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.6 h1:MoFt/Ff7+IX9Qq/w67xHV3UFSyhbctjHhd/pq+ujQr0=
+github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.6/go.mod h1:r815fYWTudnU9JhtsJAxUtuV7QrSgKpChJkfTSMFpfg=

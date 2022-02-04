@@ -1,9 +1,9 @@
 // sibylSystemGo library Project
-// Copyright (C) 2021 ALiwoto
+// Copyright (C) 2021-2022 ALiwoto
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE', which is part of the source code.
 
-package sibylSystemGo
+package sibylSystem
 
 import (
 	"context"
@@ -12,6 +12,8 @@ import (
 )
 
 type UserPermission int
+type EntityType int
+type BanFlag string
 
 type sibylCore struct {
 	Token      string
@@ -44,11 +46,11 @@ type SibylClient interface {
 	Ban(userId int64, reason string, config *BanConfig) (*BanResult, error)
 
 	// BanUser bans a "user" with given id, reason and BanConfig.
-	// IsBot parameter will be set to false.
+	// entityType will be set to "user".
 	BanUser(userId int64, reason string, config *BanConfig) (*BanResult, error)
 
-	// BanBot bans a "user" with given id, reason and BanConfig.
-	// IsBot parameter will be set to true.
+	// BanBot bans a "bot" with given id, reason and BanConfig.
+	// entityType will be set to "bot".
 	BanBot(userId int64, reason string, config *BanConfig) (*BanResult, error)
 
 	// RemoveBan removes ban from user with given id.
@@ -73,9 +75,16 @@ type SibylClient interface {
 	// Report reports a user with given id, reason and ReportConfig.
 	Report(userId int64, reason string, config *ReportConfig) (string, error)
 
+	// Scan scans a user with given id, reason and ReportConfig.
+	Scan(userId int64, reason string, config *ReportConfig) (string, error)
+
 	// ReportUser reports a "user" with given id, reason and ReportConfig.
 	// IsBot parameter will be set to false.
 	ReportUser(userId int64, reason string, config *ReportConfig) (string, error)
+
+	// ScanUser scans a "user" with given id, reason and ReportConfig.
+	// IsBot parameter will be set to false.
+	ScanUser(userId int64, reason string, config *ReportConfig) (string, error)
 
 	// ReportBot reports a "bot" with given id, reason and ReportConfig.
 	// IsBot parameter will be set to true.
@@ -115,19 +124,18 @@ type SibylError struct {
 	Date    string `json:"date"`
 }
 
-type BanConfig struct {
-	Message  string
-	SrcUrl   string
-	IsBot    bool
-	TheToken string
+type CymaticScanConfig struct {
+	Message    string
+	SrcUrl     string
+	TargetType EntityType
+	TheToken   string
 }
 
-type ReportConfig struct {
-	Message  string
-	SrcUrl   string
-	IsBot    bool
-	TheToken string
-}
+type BanConfig = CymaticScanConfig
+
+type ReportConfig = CymaticScanConfig
+
+type ScanConfig = ReportConfig
 
 // Add ban types:
 
@@ -143,16 +151,16 @@ type AddBanResponse struct {
 }
 
 type BanInfo struct {
-	UserId           int64    `json:"user_id"`
-	Banned           bool     `json:"banned"`
-	Reason           string   `json:"reason"`
-	Message          string   `json:"message"`
-	BanSourceUrl     string   `json:"ban_source_url"`
-	BannedBy         int64    `json:"banned_by"`
-	CrimeCoefficient int64    `json:"crime_coefficient"`
-	Date             string   `json:"date"`
-	BanFlags         []string `json:"ban_flags"`
-	IsBot            bool     `json:"is_bot"`
+	UserId           int64      `json:"user_id"`
+	Banned           bool       `json:"banned"`
+	Reason           string     `json:"reason"`
+	Message          string     `json:"message"`
+	BanSourceUrl     string     `json:"ban_source_url"`
+	BannedBy         int64      `json:"banned_by"`
+	CrimeCoefficient int64      `json:"crime_coefficient"`
+	Date             string     `json:"date"`
+	BanFlags         []string   `json:"ban_flags"`
+	TargetType       EntityType `json:"target_type"`
 }
 
 // Remove ban types:
@@ -172,16 +180,16 @@ type GetInfoResponse struct {
 }
 
 type GetInfoResult struct {
-	UserId           int64    `json:"user_id"`
-	Banned           bool     `json:"banned"`
-	Reason           string   `json:"reason"`
-	Message          string   `json:"message"`
-	BanSourceUrl     string   `json:"ban_source_url"`
-	BannedBy         int64    `json:"banned_by"`
-	CrimeCoefficient int64    `json:"crime_coefficient"`
-	Date             string   `json:"date"`
-	BanFlags         []string `json:"ban_flags"`
-	IsBot            bool     `json:"is_bot"`
+	UserId           int64      `json:"user_id"`
+	Banned           bool       `json:"banned"`
+	Reason           string     `json:"reason"`
+	Message          string     `json:"message"`
+	BanSourceUrl     string     `json:"ban_source_url"`
+	BannedBy         int64      `json:"banned_by"`
+	CrimeCoefficient int        `json:"crime_coefficient"`
+	Date             string     `json:"date"`
+	BanFlags         []BanFlag  `json:"ban_flags"`
+	TargetType       EntityType `json:"target_type"`
 }
 
 // general info types
