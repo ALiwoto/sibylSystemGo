@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	ws "github.com/ALiwoto/StrongStringGo/strongStringGo"
 	"github.com/ALiwoto/mdparser/mdparser"
+	ws "github.com/AnimeKaizoku/ssg/ssg"
 )
 
 // error methods:

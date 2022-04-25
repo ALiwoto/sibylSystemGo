@@ -8,6 +8,6 @@ module github.com/ALiwoto/sibylSystemGo
 go 1.15
 
 require (
-	github.com/ALiwoto/StrongStringGo v1.0.10
 	github.com/ALiwoto/mdparser v1.0.11
+	github.com/AnimeKaizoku/ssg v1.1.3
 )
