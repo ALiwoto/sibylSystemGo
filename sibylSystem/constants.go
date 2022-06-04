@@ -21,6 +21,15 @@ const (
 )
 
 const (
+	DefaultDispatcherTimeout = 30
+)
+
+const (
+	UpdateTypeScanRequestApproved = "scan_request_approved"
+	UpdateTypeScanRequestRejected = "scan_request_rejected"
+)
+
+const (
 	// EntityTypeUser represents a normal user while being scanned.
 	// please notice that "being normal", doesn't necessarily mean
 	// not being criminal.

@@ -33,6 +33,13 @@ func NewClient(token string, config *SibylConfig) SibylClient {
 	return core
 }
 
+func GetNewDispatcher(client SibylClient) *SibylDispatcher {
+	return &SibylDispatcher{
+		TimeoutSeconds: DefaultDispatcherTimeout,
+		sibylClient:    client,
+	}
+}
+
 func GetDefaultConfig() *SibylConfig {
 	return &SibylConfig{
 		HostUrl:    DefaultUrl,

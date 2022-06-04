@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/ALiwoto/mdparser/mdparser"
+	"github.com/AnimeKaizoku/ssg/ssg"
 	ws "github.com/AnimeKaizoku/ssg/ssg"
 )
 
@@ -464,6 +465,50 @@ func (s *sibylCore) GetToken(userId int64) (*TokenInfo, error) {
 	return resp.Result, nil
 }
 
+func (s *sibylCore) StartPolling() (uint64, error) {
+	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"startPolling", nil)
+	if err != nil {
+		return 0, err
+	}
+
+	req.Header.Add("token", s.Token)
+
+	resp := new(StartPollingResponse)
+
+	err = s.revokeRequest(req, resp)
+	if err != nil {
+		return 0, err
+	}
+
+	if !resp.Success && resp.Error != nil {
+		return 0, resp.Error
+	}
+	return resp.Result, nil
+}
+
+func (s *sibylCore) GetUpdates(timeout int, uniqueId uint64) (*ServerUpdateContainer, error) {
+	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"getUpdates", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("token", s.Token)
+	req.Header.Add("polling-timeout", ssg.ToBase10(int64(timeout)))
+	req.Header.Add("polling-unique-id", ssg.ToBase10(int64(uniqueId)))
+
+	resp := new(GetUpdateResponse)
+
+	err = s.revokeRequest(req, resp)
+	if err != nil {
+		return nil, err
+	}
+
+	if !resp.Success && resp.Error != nil {
+		return nil, resp.Error
+	}
+	return resp.Result, nil
+}
+
 func (s *sibylCore) GetAllRegisteredUsers() (*GetRegisteredResult, error) {
 	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"getStats", nil)
 	if err != nil {
@@ -715,6 +760,61 @@ func (r *GetInfoResult) EstimateCrimeCoefficientSep() (string, string) {
 		return "over ", str[:len(str)-2] + "00"
 	}
 	return "under ", "100"
+}
+
+//---------------------------------------------------------
+
+func (d *SibylDispatcher) Listen() {
+	go d.StartListening()
+}
+
+func (d *SibylDispatcher) StartListening() {
+	var err error
+	d.PollingUniqueId, err = d.sibylClient.StartPolling()
+	if err != nil {
+		if d.onStartFailed != nil {
+			d.onStartFailed(err)
+		}
+		return
+	}
+
+	var container *ServerUpdateContainer
+
+	for !d.isStopped {
+		container, err = d.sibylClient.GetUpdates(d.TimeoutSeconds, d.PollingUniqueId)
+		if err != nil && d.onGetUpdateFailed != nil {
+			d.onGetUpdateFailed(err)
+			continue
+		}
+
+		// no updates, our request got timed out
+		if container == nil {
+			continue
+		}
+
+		// parse and handle each update in its own goroutine, to get the
+		// best performance.
+		go d.onUpdateReceived(container)
+	}
+}
+
+func (d *SibylDispatcher) SetOnStartFailed(fn func(error)) {
+	d.onStartFailed = fn
+}
+
+func (d *SibylDispatcher) SetOnGetUpdateFailed(fn func(error)) {
+	d.onGetUpdateFailed = fn
+}
+
+func (d *SibylDispatcher) SetOnHandlerError(fn func(error)) {
+	d.onHandlerError = fn
+}
+
+func (d *SibylDispatcher) onUpdateReceived(container *ServerUpdateContainer) {
+	switch container.UpdateType {
+	case UpdateTypeScanRequestApproved:
+
+	}
 }
 
 //---------------------------------------------------------

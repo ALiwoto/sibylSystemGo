@@ -5,9 +5,13 @@
 
 module github.com/ALiwoto/sibylSystemGo
 
-go 1.15
+go 1.18
 
 require (
-	github.com/ALiwoto/mdparser v1.0.11
-	github.com/AnimeKaizoku/ssg v1.1.3
+	github.com/ALiwoto/mdparser v1.1.2
+	github.com/AnimeKaizoku/ssg v1.1.20
+)
+
+require (
+	golang.org/x/text v0.3.7 // indirect
 )

@@ -7,13 +7,17 @@ package sibylSystem
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/AnimeKaizoku/ssg/ssg"
 )
 
 type UserPermission int
 type EntityType int
 type BanFlag string
+type SibylUpdateType string
 
 type sibylCore struct {
 	Token      string
@@ -26,6 +30,19 @@ type SibylConfig struct {
 	HostUrl    string
 	HttpClient *http.Client
 	Context    context.Context
+}
+
+type SibylDispatcher struct {
+	PollingUniqueId uint64
+	TimeoutSeconds  int
+	isStopped       bool
+	sibylClient     SibylClient
+
+	onStartFailed     func(error)
+	onGetUpdateFailed func(error)
+	onHandlerError    func(error)
+
+	handlers *ssg.SafeMap[SibylUpdateType, []ServerUpdateHandler]
 }
 
 type SibylClient interface {
@@ -106,6 +123,19 @@ type SibylClient interface {
 
 	// GetAllRegisteredUsers returns information about all registered users.
 	GetAllRegisteredUsers() (*GetRegisteredResult, error)
+
+	// StartPolling method will sends a new StartPolling request to the server.
+	// as of now, this method can only be used by users with permission more than
+	// inspector. this method will return the unique id of the polling process.
+	// later on, for getting updates from server, you should pass this unique-id.
+	StartPolling() (uint64, error)
+
+	// GetUpdates will send a GetUpdates request to the sibyl's servers, the response
+	// might be (nil, nil), which means getting data got timed out. normally, you have
+	// to call this method consequently if you want to remain up-to-date with server's
+	// events. preferably, pass the unique-id you have got from StartPolling method as
+	// second arg (second arg is not mandatory, and can be set to 0).
+	GetUpdates(timeout int, uniqueId uint64) (*ServerUpdateContainer, error)
 
 	// String returns string representation of the current SibylClient.
 	String() string
@@ -324,3 +354,43 @@ type GetRegisteredResponse struct {
 type GetRegisteredResult struct {
 	RegisteredUsers []int64 `json:"registered_users"`
 }
+
+// polling-related structs
+
+type StartPollingResponse struct {
+	Success bool        `json:"success"`
+	Result  uint64      `json:"result"`
+	Error   *SibylError `json:"error"`
+}
+
+type GetUpdateResponse struct {
+	Success bool                   `json:"success"`
+	Result  *ServerUpdateContainer `json:"result"`
+	Error   *SibylError            `json:"error"`
+}
+
+type ServerUpdateContainer struct {
+	UpdateType SibylUpdateType `json:"update_type"`
+	UpdateData json.RawMessage `json:"update_data"`
+}
+
+type ScanRequestApprovedUpdate struct {
+	UniqueId    string     `json:"unique_id"`
+	TargetUser  int64      `json:"target_user"`
+	TargetType  EntityType `json:"target_type"`
+	AgentReason string     `json:"agent_reason"`
+}
+
+type ScanRequestRejectedUpdate struct {
+	UniqueId    string     `json:"unique_id"`
+	TargetUser  int64      `json:"target_user"`
+	TargetType  EntityType `json:"target_type"`
+	AgentReason string     `json:"agent_reason"`
+}
+
+type SibylUpdateContext struct {
+	ScanRequestApproved *ScanRequestApprovedUpdate
+	ScanRequestRejected *ScanRequestApprovedUpdate
+}
+
+type ServerUpdateHandler func(client SibylClient, ctx SibylUpdateContext) error
