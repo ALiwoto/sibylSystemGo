@@ -393,4 +393,4 @@ type SibylUpdateContext struct {
 	ScanRequestRejected *ScanRequestApprovedUpdate
 }
 
-type ServerUpdateHandler func(client SibylClient, ctx SibylUpdateContext) error
+type ServerUpdateHandler func(client SibylClient, ctx *SibylUpdateContext) error

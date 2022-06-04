@@ -810,10 +810,44 @@ func (d *SibylDispatcher) SetOnHandlerError(fn func(error)) {
 	d.onHandlerError = fn
 }
 
+func (d *SibylDispatcher) AddHandler(uType SibylUpdateType, h ServerUpdateHandler) {
+	handlers := d.handlers.GetValue(uType)
+	handlers = append(handlers, h)
+	d.handlers.Set(uType, handlers)
+}
+
 func (d *SibylDispatcher) onUpdateReceived(container *ServerUpdateContainer) {
+	var err error
+	ctx := new(SibylUpdateContext)
 	switch container.UpdateType {
 	case UpdateTypeScanRequestApproved:
+		ctx.ScanRequestApproved = new(ScanRequestApprovedUpdate)
+		err = json.Unmarshal(container.UpdateData, ctx.ScanRequestApproved)
+	case UpdateTypeScanRequestRejected:
+		ctx.ScanRequestRejected = new(ScanRequestApprovedUpdate)
+		err = json.Unmarshal(container.UpdateData, ctx.ScanRequestRejected)
+	default:
+		// #TODO: add something for capturing this in future, idk
+		return
+	}
 
+	if err != nil {
+		if d.onGetUpdateFailed != nil {
+			d.onGetUpdateFailed(err)
+			return
+		}
+	}
+
+	handlers := d.handlers.GetValue(container.UpdateType)
+	if len(handlers) == 0 {
+		return
+	}
+
+	for _, current := range handlers {
+		err = current(d.sibylClient, ctx)
+		if err != nil && d.onHandlerError != nil {
+			d.onHandlerError(err)
+		}
 	}
 }
 

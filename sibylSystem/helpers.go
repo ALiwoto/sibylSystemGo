@@ -9,6 +9,8 @@ import (
 	"context"
 	"net/http"
 	"strings"
+
+	"github.com/AnimeKaizoku/ssg/ssg"
 )
 
 func NewClient(token string, config *SibylConfig) SibylClient {
@@ -37,6 +39,7 @@ func GetNewDispatcher(client SibylClient) *SibylDispatcher {
 	return &SibylDispatcher{
 		TimeoutSeconds: DefaultDispatcherTimeout,
 		sibylClient:    client,
+		handlers:       ssg.NewSafeMap[SibylUpdateType, []ServerUpdateHandler](),
 	}
 }
 
