@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/ALiwoto/mdparser/mdparser"
-	"github.com/AnimeKaizoku/ssg/ssg"
 	ws "github.com/AnimeKaizoku/ssg/ssg"
 )
 
@@ -493,8 +492,8 @@ func (s *sibylCore) GetUpdates(timeout int, uniqueId uint64) (*ServerUpdateConta
 	}
 
 	req.Header.Add("token", s.Token)
-	req.Header.Add("polling-timeout", ssg.ToBase10(int64(timeout)))
-	req.Header.Add("polling-unique-id", ssg.ToBase10(int64(uniqueId)))
+	req.Header.Add("polling-timeout", ws.ToBase10(int64(timeout)))
+	req.Header.Add("polling-unique-id", ws.ToBase10(int64(uniqueId)))
 
 	resp := new(GetUpdateResponse)
 
@@ -765,10 +764,17 @@ func (r *GetInfoResult) EstimateCrimeCoefficientSep() (string, string) {
 //---------------------------------------------------------
 
 func (d *SibylDispatcher) Listen() {
+	d.totalTries = 0
 	go d.StartListening()
 }
 
 func (d *SibylDispatcher) StartListening() {
+	d.totalTries++
+	if d.totalTries > d.MaxConnectionTries {
+		// give up
+		return
+	}
+
 	var err error
 	d.PollingUniqueId, err = d.sibylClient.StartPolling()
 	if err != nil {
@@ -782,9 +788,16 @@ func (d *SibylDispatcher) StartListening() {
 
 	for !d.isStopped {
 		container, err = d.sibylClient.GetUpdates(d.TimeoutSeconds, d.PollingUniqueId)
-		if err != nil && d.onGetUpdateFailed != nil {
-			d.onGetUpdateFailed(err)
-			continue
+		if err != nil {
+			errStr := err.Error()
+			if strings.Contains(errStr, "dial tcp") && strings.Contains(errStr, "connect: connection refused") {
+				time.Sleep(time.Second)
+				d.StartListening()
+				return
+			}
+			if d.onGetUpdateFailed != nil {
+				d.onGetUpdateFailed(err)
+			}
 		}
 
 		// no updates, our request got timed out

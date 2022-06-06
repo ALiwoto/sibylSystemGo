@@ -33,10 +33,12 @@ type SibylConfig struct {
 }
 
 type SibylDispatcher struct {
-	PollingUniqueId uint64
-	TimeoutSeconds  int
-	isStopped       bool
-	sibylClient     SibylClient
+	PollingUniqueId    uint64
+	TimeoutSeconds     int
+	MaxConnectionTries int
+	isStopped          bool
+	sibylClient        SibylClient
+	totalTries         int
 
 	onStartFailed     func(error)
 	onGetUpdateFailed func(error)

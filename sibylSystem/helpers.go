@@ -37,9 +37,10 @@ func NewClient(token string, config *SibylConfig) SibylClient {
 
 func GetNewDispatcher(client SibylClient) *SibylDispatcher {
 	return &SibylDispatcher{
-		TimeoutSeconds: DefaultDispatcherTimeout,
-		sibylClient:    client,
-		handlers:       ssg.NewSafeMap[SibylUpdateType, []ServerUpdateHandler](),
+		TimeoutSeconds:     DefaultDispatcherTimeout,
+		MaxConnectionTries: 50,
+		sibylClient:        client,
+		handlers:           ssg.NewSafeMap[SibylUpdateType, []ServerUpdateHandler](),
 	}
 }
 
