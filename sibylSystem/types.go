@@ -16,6 +16,7 @@ import (
 
 type UserPermission int
 type EntityType int
+type PollingUniqueId uint64
 type BanFlag string
 type SibylUpdateType string
 
@@ -33,7 +34,7 @@ type SibylConfig struct {
 }
 
 type SibylDispatcher struct {
-	PollingUniqueId    uint64
+	PollingId          *PollingIdentifier
 	TimeoutSeconds     int
 	MaxConnectionTries int
 	isStopped          bool
@@ -130,14 +131,14 @@ type SibylClient interface {
 	// as of now, this method can only be used by users with permission more than
 	// inspector. this method will return the unique id of the polling process.
 	// later on, for getting updates from server, you should pass this unique-id.
-	StartPolling() (uint64, error)
+	StartPolling() (*PollingIdentifier, error)
 
 	// GetUpdates will send a GetUpdates request to the sibyl's servers, the response
 	// might be (nil, nil), which means getting data got timed out. normally, you have
 	// to call this method consequently if you want to remain up-to-date with server's
 	// events. preferably, pass the unique-id you have got from StartPolling method as
 	// second arg (second arg is not mandatory, and can be set to 0).
-	GetUpdates(timeout int, uniqueId uint64) (*ServerUpdateContainer, error)
+	GetUpdates(timeout int, uniqueId *PollingIdentifier) (*ServerUpdateContainer, error)
 
 	// String returns string representation of the current SibylClient.
 	String() string
@@ -161,6 +162,7 @@ type CymaticScanConfig struct {
 	SrcUrl     string
 	TargetType EntityType
 	TheToken   string
+	PollingId  *PollingIdentifier
 }
 
 type BanConfig = CymaticScanConfig
@@ -359,10 +361,16 @@ type GetRegisteredResult struct {
 
 // polling-related structs
 
+// PollingIdentifier represents a unique polling identifier.
+type PollingIdentifier struct {
+	PollingUniqueId   PollingUniqueId `json:"polling_unique_id"`
+	PollingAccessHash string          `json:"polling_access_hash"`
+}
+
 type StartPollingResponse struct {
-	Success bool        `json:"success"`
-	Result  uint64      `json:"result"`
-	Error   *SibylError `json:"error"`
+	Success bool               `json:"success"`
+	Result  *PollingIdentifier `json:"result"`
+	Error   *SibylError        `json:"error"`
 }
 
 type GetUpdateResponse struct {

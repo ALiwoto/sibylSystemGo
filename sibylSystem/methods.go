@@ -333,6 +333,10 @@ func (s *sibylCore) Report(userId int64, reason string, config *ReportConfig) (s
 	v.Add("message", config.Message)
 	v.Add("src", config.SrcUrl)
 	v.Add("entity-type", config.TargetType.ToString())
+	if !config.PollingId.IsInvalid() {
+		v.Add("polling-unique-id", ws.ToBase10(int64(config.PollingId.PollingUniqueId)))
+		v.Add("polling-access-hash", config.PollingId.PollingAccessHash)
+	}
 
 	resp := new(ReportResponse)
 
@@ -464,10 +468,10 @@ func (s *sibylCore) GetToken(userId int64) (*TokenInfo, error) {
 	return resp.Result, nil
 }
 
-func (s *sibylCore) StartPolling() (uint64, error) {
+func (s *sibylCore) StartPolling() (*PollingIdentifier, error) {
 	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"startPolling", nil)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	req.Header.Add("token", s.Token)
@@ -476,16 +480,16 @@ func (s *sibylCore) StartPolling() (uint64, error) {
 
 	err = s.revokeRequest(req, resp)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if !resp.Success && resp.Error != nil {
-		return 0, resp.Error
+		return nil, resp.Error
 	}
 	return resp.Result, nil
 }
 
-func (s *sibylCore) GetUpdates(timeout int, uniqueId uint64) (*ServerUpdateContainer, error) {
+func (s *sibylCore) GetUpdates(timeout int, pollingId *PollingIdentifier) (*ServerUpdateContainer, error) {
 	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"getUpdates", nil)
 	if err != nil {
 		return nil, err
@@ -493,7 +497,10 @@ func (s *sibylCore) GetUpdates(timeout int, uniqueId uint64) (*ServerUpdateConta
 
 	req.Header.Add("token", s.Token)
 	req.Header.Add("polling-timeout", ws.ToBase10(int64(timeout)))
-	req.Header.Add("polling-unique-id", ws.ToBase10(int64(uniqueId)))
+	if !pollingId.IsInvalid() {
+		req.Header.Add("polling-unique-id", ws.ToBase10(int64(pollingId.PollingUniqueId)))
+		req.Header.Add("polling-access-hash", pollingId.PollingAccessHash)
+	}
 
 	resp := new(GetUpdateResponse)
 
@@ -776,7 +783,7 @@ func (d *SibylDispatcher) StartListening() {
 	}
 
 	var err error
-	d.PollingUniqueId, err = d.sibylClient.StartPolling()
+	d.PollingId, err = d.sibylClient.StartPolling()
 	if err != nil {
 		if d.onStartFailed != nil {
 			d.onStartFailed(err)
@@ -787,7 +794,7 @@ func (d *SibylDispatcher) StartListening() {
 	var container *ServerUpdateContainer
 
 	for !d.isStopped {
-		container, err = d.sibylClient.GetUpdates(d.TimeoutSeconds, d.PollingUniqueId)
+		container, err = d.sibylClient.GetUpdates(d.TimeoutSeconds, d.PollingId)
 		if err != nil {
 			errStr := err.Error()
 			if strings.Contains(errStr, "dial tcp") && strings.Contains(errStr, "connect: connection refused") {
@@ -933,3 +940,11 @@ func (e EntityType) IsOwnerOrAdmin() bool {
 func (e EntityType) IsOwnerOrAdminStr() string {
 	return ws.YesOrNo(e == EntityTypeOwner || e == EntityTypeAdmin)
 }
+
+//---------------------------------------------------------
+
+func (p *PollingIdentifier) IsInvalid() bool {
+	return p == nil || p.PollingUniqueId == 0 || p.PollingAccessHash == ""
+}
+
+//---------------------------------------------------------
