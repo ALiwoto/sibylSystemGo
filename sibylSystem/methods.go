@@ -176,14 +176,25 @@ func (s *sibylCore) BanBot(userId int64, reason string, config *BanConfig) (*Ban
 	return s.Ban(userId, reason, config)
 }
 
-func (s *sibylCore) RemoveBan(userId int64) (string, error) {
+func (s *sibylCore) RemoveBan(userId int64, reason string, config *RevertConfig) (string, error) {
 	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"remBan", nil)
 	if err != nil {
 		return "", err
 	}
 
-	req.Header.Add("token", s.Token)
+	var myToken string
+	if config.TheToken != "" {
+		myToken = config.TheToken
+	} else {
+		myToken = s.Token
+	}
+
+	req.Header.Add("token", myToken)
 	req.Header.Add("user-id", strconv.FormatInt(userId, 10))
+	req.Header.Add("reason", reason)
+	req.Header.Add("message", config.Message)
+	req.Header.Add("srcUrl", config.SrcUrl)
+	req.Header.Add("entity-type", config.TargetType.ToString())
 
 	resp := new(RemoveBanResponse)
 
@@ -197,6 +208,10 @@ func (s *sibylCore) RemoveBan(userId int64) (string, error) {
 	}
 
 	return resp.Result, nil
+}
+
+func (s *sibylCore) RevertBan(userId int64, reason string, config *RevertConfig) (string, error) {
+	return s.RemoveBan(userId, reason, config)
 }
 
 // info methods:
@@ -782,39 +797,45 @@ func (d *SibylDispatcher) StartListening() {
 		return
 	}
 
-	var err error
-	d.PollingId, err = d.sibylClient.StartPolling()
-	if err != nil {
-		if d.onStartFailed != nil {
-			d.onStartFailed(err)
-		}
-		return
-	}
-
-	var container *ServerUpdateContainer
-
 	for !d.isStopped {
-		container, err = d.sibylClient.GetUpdates(d.TimeoutSeconds, d.PollingId)
+		var err error
+		d.PollingId, err = d.sibylClient.StartPolling()
 		if err != nil {
-			errStr := err.Error()
-			if strings.Contains(errStr, "dial tcp") && strings.Contains(errStr, "connect: connection refused") {
-				time.Sleep(time.Second)
-				d.StartListening()
-				return
+			if d.onStartFailed != nil {
+				d.onStartFailed(err)
 			}
-			if d.onGetUpdateFailed != nil {
-				d.onGetUpdateFailed(err)
-			}
-		}
 
-		// no updates, our request got timed out
-		if container == nil {
+			time.Sleep(2 * time.Second)
 			continue
 		}
 
-		// parse and handle each update in its own goroutine, to get the
-		// best performance.
-		go d.onUpdateReceived(container)
+		var container *ServerUpdateContainer
+
+		for !d.isStopped {
+			container, err = d.sibylClient.GetUpdates(d.TimeoutSeconds, d.PollingId)
+			if err != nil {
+				errStr := err.Error()
+				if strings.Contains(errStr, "dial tcp") && strings.Contains(errStr, "connect: connection refused") {
+					// connection issue, try to reconnect.
+					break
+				}
+
+				if d.onGetUpdateFailed != nil {
+					d.onGetUpdateFailed(err)
+				}
+
+				continue
+			}
+
+			// no updates, our request got timed out
+			if container == nil {
+				continue
+			}
+
+			// parse and handle each update in its own goroutine, to get the
+			// best performance.
+			go d.onUpdateReceived(container)
+		}
 	}
 }
 

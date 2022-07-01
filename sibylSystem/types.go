@@ -74,7 +74,10 @@ type SibylClient interface {
 	BanBot(userId int64, reason string, config *BanConfig) (*BanResult, error)
 
 	// RemoveBan removes ban from user with given id.
-	RemoveBan(userId int64) (string, error)
+	RemoveBan(userId int64, reason string, config *RevertConfig) (string, error)
+
+	// RevertBan reverts the ban from user with given id.
+	RevertBan(userId int64, reason string, config *RevertConfig) (string, error)
 
 	// GetInfo returns information about the user with given id.
 	GetInfo(userId int64) (*GetInfoResult, error)
@@ -170,6 +173,8 @@ type BanConfig = CymaticScanConfig
 type ReportConfig = CymaticScanConfig
 
 type ScanConfig = ReportConfig
+
+type RevertConfig = CymaticScanConfig
 
 // Add ban types:
 
