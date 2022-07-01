@@ -182,6 +182,10 @@ func (s *sibylCore) RemoveBan(userId int64, reason string, config *RevertConfig)
 		return "", err
 	}
 
+	if config == nil {
+		config = &RevertConfig{}
+	}
+
 	var myToken string
 	if config.TheToken != "" {
 		myToken = config.TheToken

@@ -67,7 +67,7 @@ func TestUnBanUser01(t *testing.T) {
 	}
 
 	client := sibylSystemGo.NewClient(token, sibylSystemGo.GetDefaultConfig())
-	b, err := client.RemoveBan(1478)
+	b, err := client.RemoveBan(1478, "", nil)
 	if err != nil {
 		log.Println(err)
 		return
