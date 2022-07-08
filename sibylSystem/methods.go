@@ -819,7 +819,7 @@ func (d *SibylDispatcher) StartListening() {
 			container, err = d.sibylClient.GetUpdates(d.TimeoutSeconds, d.PollingId)
 			if err != nil {
 				errStr := err.Error()
-				if strings.Contains(errStr, "dial tcp") && strings.Contains(errStr, "connect: connection refused") {
+				if strings.Contains(errStr, "dial tcp") || strings.Contains(errStr, "connect: connection refused") {
 					// connection issue, try to reconnect.
 					break
 				}
