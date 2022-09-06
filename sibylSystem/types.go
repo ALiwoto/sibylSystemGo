@@ -79,6 +79,11 @@ type SibylClient interface {
 	// RevertBan reverts the ban from user with given id.
 	RevertBan(userId int64, reason string, config *RevertConfig) (string, error)
 
+	// FullRevert will fully revert the target user, they won't get `Restored` status,
+	// all of their bans history will be deleted.
+	// This method requires high token permission.
+	FullRevert(userId int64, config *FullRevertConfig) (string, error)
+
 	// GetInfo returns information about the user with given id.
 	GetInfo(userId int64) (*GetInfoResult, error)
 
@@ -168,6 +173,10 @@ type CymaticScanConfig struct {
 	PollingId  *PollingIdentifier
 }
 
+type FullRevertConfig struct {
+	TheToken string
+}
+
 type BanConfig = CymaticScanConfig
 
 type ReportConfig = CymaticScanConfig
@@ -205,6 +214,12 @@ type BanInfo struct {
 // Remove ban types:
 
 type RemoveBanResponse struct {
+	Success bool        `json:"success"`
+	Result  string      `json:"result"`
+	Error   *SibylError `json:"error"`
+}
+
+type FullRevertResponse struct {
 	Success bool        `json:"success"`
 	Result  string      `json:"result"`
 	Error   *SibylError `json:"error"`

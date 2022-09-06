@@ -77,9 +77,9 @@ func validateHostUrl(value string) string {
 		return value
 	}
 
-	// animekaizoku's domains are mostly protected by cloudflare shit,
+	// kaizoku's domains are mostly protected by cloudflare shit,
 	// so we need to use https:// for them.
-	if strings.Contains(value, "animekaizoku") {
+	if strings.Contains(value, "animekaizoku") || strings.Contains(value, "kaizoku.cyou") {
 		return "https://" + value
 	}
 

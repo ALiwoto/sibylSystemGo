@@ -9,7 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	urlLib "net/url"
 	"strconv"
@@ -42,7 +42,7 @@ func (s *sibylCore) revokeRequest(req *http.Request, result interface{}) error {
 func (s *sibylCore) readResp(resp *http.Response, result interface{}) error {
 	defer resp.Body.Close()
 
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
@@ -216,6 +216,41 @@ func (s *sibylCore) RemoveBan(userId int64, reason string, config *RevertConfig)
 
 func (s *sibylCore) RevertBan(userId int64, reason string, config *RevertConfig) (string, error) {
 	return s.RemoveBan(userId, reason, config)
+}
+
+func (s *sibylCore) FullRevert(userId int64, config *FullRevertConfig) (string, error) {
+	req, err := http.NewRequest(http.MethodGet, s.HostUrl+"fullRevert", nil)
+	if err != nil {
+		return "", err
+	}
+
+	if config == nil {
+		// allocating here because we might need some other fields as well.
+		config = &FullRevertConfig{}
+	}
+
+	var myToken string
+	if config.TheToken != "" {
+		myToken = config.TheToken
+	} else {
+		myToken = s.Token
+	}
+
+	req.Header.Add("token", myToken)
+	req.Header.Add("user-id", strconv.FormatInt(userId, 10))
+
+	resp := new(FullRevertResponse)
+
+	err = s.revokeRequest(req, resp)
+	if err != nil {
+		return "", err
+	}
+
+	if !resp.Success && resp.Error != nil {
+		return "", resp.Error
+	}
+
+	return resp.Result, nil
 }
 
 // info methods:

@@ -6,7 +6,7 @@
 package sibylSystem
 
 const (
-	DefaultUrl = "https://psychopass.animekaizoku.com/"
+	DefaultUrl = "https://psychopass.kaizoku.cyou/"
 )
 
 const (
