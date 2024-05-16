@@ -44,6 +44,7 @@ func GetNewDispatcher(client SibylClient) *SibylDispatcher {
 	}
 }
 
+// GetDefaultConfig returns default config.
 func GetDefaultConfig() *SibylConfig {
 	return &SibylConfig{
 		HostUrl:    DefaultUrl,
